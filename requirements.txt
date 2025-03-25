@@ -1,0 +1,6 @@
+hdbcli>=2.16.22
+mcp-python>=0.1.4
+aiohttp>=3.8.1
+python-dotenv>=1.0.0
+uvicorn>=0.23.0
+starlette>=0.31.0
