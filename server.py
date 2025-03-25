@@ -47,44 +47,40 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(o)
 
 # Format utilities for tool results
-def format_result_content(result: Any) -> List[Dict[str, Any]]:
-    """Format result into MCP content format."""
-    if isinstance(result, str):
-        return [{"type": "text", "text": result}]
-    elif isinstance(result, dict):
-        if "error" in result:
-            return [{"type": "text", "text": f"Error: {result['error']}"}]
-        else:
-            # Format dictionary as markdown table
-            return [{"type": "text", "text": json.dumps(result, indent=2, cls=DecimalEncoder)}]
-    elif isinstance(result, list):
-        if not result:
-            return [{"type": "text", "text": "No results found."}]
+def format_result_content(result: Union[Dict[str, Any], str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Format the result content for MCP response.
+    
+    This helper function standardizes the format of results returned by MCP tools.
+    
+    Args:
+        result: The result to format, can be a dictionary, string, or list of dictionaries
         
-        if isinstance(result[0], dict):
-            # Format list of dictionaries as markdown table
-            table_str = "| " + " | ".join(result[0].keys()) + " |\n"
-            table_str += "| " + " | ".join(["---"] * len(result[0].keys())) + " |\n"
-            
-            for row in result:
-                # Convert any Decimal values to float
-                formatted_values = []
-                for val in row.values():
-                    if isinstance(val, decimal.Decimal):
-                        formatted_values.append(str(float(val)))
-                    else:
-                        formatted_values.append(str(val))
-                
-                table_str += "| " + " | ".join(formatted_values) + " |\n"
-            
-            return [{"type": "text", "text": table_str}]
-        else:
-            # Format list as bullet points
-            bullet_list = "\n".join([f"* {item}" for item in result])
-            return [{"type": "text", "text": bullet_list}]
-    else:
-        # Default formatting for other types
-        return [{"type": "text", "text": str(result)}]
+    Returns:
+        A properly formatted MCP response
+    """
+    # If result is already in MCP format, return it as is
+    if isinstance(result, dict) and "content" in result and "isError" in result:
+        return result
+    
+    # If result is a string, wrap it in a text content item
+    if isinstance(result, str):
+        return {
+            "content": [{"type": "text", "text": result}],
+            "isError": False
+        }
+    
+    # If result is a list of dictionaries, assume it's already content items
+    if isinstance(result, list) and all(isinstance(item, dict) for item in result):
+        return {
+            "content": result,
+            "isError": False
+        }
+    
+    # Otherwise, convert to string and wrap in a text content item
+    return {
+        "content": [{"type": "text", "text": str(result)}],
+        "isError": False
+    }
 
 # Add a global server initialization flag
 _server_initialized = False
@@ -236,6 +232,267 @@ async def get_table_used_memory(use_system_db: bool = True) -> Dict[str, Any]:
         logging.error(f"Error getting table memory usage: {str(e)}", exc_info=True)
         return {
             "content": [{"type": "text", "text": f"Error getting table memory usage: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def check_disk_space(sid: str = None, host: str = None, filesystem: str = None, auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Check disk space on SAP/HANA systems.
+    
+    This tool executes disk space commands on the specified host and parses the output
+    to provide structured information about disk usage.
+    
+    Args:
+        sid: SAP System ID (optional, will use default from config if not provided)
+        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
+        filesystem: Optional specific filesystem to check
+        auth_context: Authentication context for SSH connection
+    """
+    try:
+        # If SID is not provided and host is not provided, use the first one from executor_config
+        if not sid and not host:
+            from tools.command_executor import load_system_config
+            config = load_system_config()
+            if config and "systems" in config and config["systems"]:
+                # Get the first system
+                test_sid = next(iter(config["systems"].keys()))
+                sid = test_sid
+                logging.info(f"Using default SID from config: {sid}")
+            
+        from tools.disk_check import check_disk_space as check_disk_space_impl
+        result = await check_disk_space_impl(sid=sid, host=host, filesystem=filesystem, auth_context=auth_context)
+        
+        # Format the result for MCP
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error checking disk space: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error checking disk space: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def check_hana_volumes(sid: str = None, host: str = None, auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Check HANA data volumes and their disk usage.
+    
+    This tool identifies HANA data volumes on the specified host and checks their usage.
+    
+    Args:
+        sid: SAP System ID (optional, will use default from config if not provided)
+        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
+        auth_context: Authentication context for SSH connection
+    """
+    try:
+        # If SID is not provided and host is not provided, use the first one from executor_config
+        if not sid and not host:
+            from tools.command_executor import load_system_config
+            config = load_system_config()
+            if config and "systems" in config and config["systems"]:
+                # Get the first system
+                test_sid = next(iter(config["systems"].keys()))
+                sid = test_sid
+                logging.info(f"Using default SID from config: {sid}")
+            
+        from tools.disk_check import check_hana_volumes as check_hana_volumes_impl
+        result = await check_hana_volumes_impl(sid=sid, host=host, auth_context=auth_context)
+        
+        # Format the result for MCP
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error checking HANA volumes: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error checking HANA volumes: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def manage_hana_system(sid: str = None, instance_number: str = None, host: str = None, action: str = None, 
+                             auth_context: Dict[str, Any] = None, wait: bool = True, 
+                             timeout: int = 300) -> Dict[str, Any]:
+    """Manage HANA database system (start, stop, restart).
+    
+    This tool executes the appropriate commands to start, stop, or restart a HANA database.
+    
+    Args:
+        sid: SAP System ID (optional, will use default from config if not provided)
+        instance_number: HANA instance number (optional, will use default from config if not provided)
+        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
+        action: Action to perform (start, stop, restart)
+        auth_context: Authentication context for SSH connection
+        wait: Whether to wait for the operation to complete
+        timeout: Maximum time to wait in seconds
+    """
+    try:
+        # Validate the action
+        if not action or action.lower() not in ["start", "stop", "restart"]:
+            return {
+                "content": [{"type": "text", "text": f"Invalid action: {action}. Must be one of: start, stop, restart"}],
+                "isError": True
+            }
+        
+        # Authentication check removed as we're using SSH credentials from executor_config
+        # Users are already authenticated via the SSH credentials in the executor config
+        
+        # If SID is not provided, use the first one from executor_config
+        if not sid:
+            from tools.command_executor import load_system_config
+            config = load_system_config()
+            if config and "systems" in config and config["systems"]:
+                # Get the first system that has type containing "HANA"
+                hana_systems = [sid for sid, system in config["systems"].items() 
+                              if "type" in system and "HANA" in system["type"]]
+                if hana_systems:
+                    sid = hana_systems[0]
+                    logging.info(f"Using default HANA SID from config: {sid}")
+                else:
+                    # Fallback to first system if no HANA system found
+                    sid = next(iter(config["systems"].keys()))
+                    logging.info(f"No HANA system found, using first system SID: {sid}")
+            
+        from tools.hana_control import manage_hana_system as manage_hana_system_impl
+        result = await manage_hana_system_impl(sid=sid, instance_number=instance_number, host=host, 
+                                            action=action, auth_context=auth_context, 
+                                            wait=wait, timeout=timeout)
+        
+        # Format the result for MCP
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error managing HANA system: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error managing HANA system: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def check_hana_status(sid: str = None, instance_number: str = None, host: str = None, 
+                           auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Check HANA database status.
+    
+    This tool retrieves the status of HANA services, version information, and system overview.
+    
+    Args:
+        sid: SAP System ID (optional, will use default from config if not provided)
+        instance_number: HANA instance number (optional, will use default from config if not provided)
+        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
+        auth_context: Authentication context for SSH connection
+    """
+    try:
+        # Authentication check removed as we're using SSH credentials from executor_config
+        # Users are already authenticated via the SSH credentials in the executor config
+        
+        # If SID is not provided, use the first one from executor_config
+        if not sid:
+            from tools.command_executor import load_system_config
+            config = load_system_config()
+            if config and "systems" in config and config["systems"]:
+                # Get the first system that has type containing "HANA"
+                hana_systems = [sid for sid, system in config["systems"].items() 
+                              if "type" in system and "HANA" in system["type"]]
+                if hana_systems:
+                    sid = hana_systems[0]
+                    logging.info(f"Using default HANA SID from config: {sid}")
+                else:
+                    # Fallback to first system if no HANA system found
+                    sid = next(iter(config["systems"].keys()))
+                    logging.info(f"No HANA system found, using first system SID: {sid}")
+            
+        # Now call the implementation
+        from tools.hana_status import check_hana_status as check_hana_status_impl
+        result = await check_hana_status_impl(sid=sid, instance_number=instance_number, 
+                                             host=host, auth_context=auth_context)
+        
+        # Format the result for MCP
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error checking HANA status: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error checking HANA status: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def get_hana_version(sid: str = None, instance_number: str = None, host: str = None, 
+                           auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Get HANA database version information.
+    
+    This tool retrieves detailed version information for a HANA database.
+    
+    Args:
+        sid: SAP System ID (optional, will use default from config if not provided)
+        instance_number: HANA instance number (optional, will use default from config if not provided)
+        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
+        auth_context: Authentication context for SSH connection
+    """
+    try:
+        # Authentication check removed as we're using SSH credentials from executor_config
+        # Users are already authenticated via the SSH credentials in the executor config
+        
+        # If SID is not provided, use the first one from executor_config
+        if not sid:
+            from tools.command_executor import load_system_config
+            config = load_system_config()
+            if config and "systems" in config and config["systems"]:
+                # Get the first system that has type containing "HANA"
+                hana_systems = [sid for sid, system in config["systems"].items() 
+                              if "type" in system and "HANA" in system["type"]]
+                if hana_systems:
+                    sid = hana_systems[0]
+                    logging.info(f"Using default HANA SID from config: {sid}")
+                else:
+                    # Fallback to first system if no HANA system found
+                    sid = next(iter(config["systems"].keys()))
+                    logging.info(f"No HANA system found, using first system SID: {sid}")
+            
+        from tools.hana_status import get_hana_version as get_hana_version_impl
+        result = await get_hana_version_impl(sid=sid, instance_number=instance_number, host=host, auth_context=auth_context)
+        
+        # Format the result for MCP
+        return {
+            "content": [{"type": "text", "text": f"HANA Version: {result}"}],
+            "isError": False
+        }
+    except Exception as e:
+        logging.error(f"Error getting HANA version: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting HANA version: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def list_sap_systems(auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """List all configured SAP systems.
+    
+    This tool retrieves the list of all SAP systems configured in the executor_config.json file.
+    
+    Args:
+        auth_context: Authentication context for SSH connection
+    """
+    try:
+        # Authentication check removed as we're using SSH credentials from executor_config
+        # Users are already authenticated via the SSH credentials in the executor config
+            
+        from tools.command_executor import list_systems
+        systems = list_systems()
+        
+        # Format the result for MCP
+        content = [{"type": "text", "text": "Configured SAP Systems:"}]
+        
+        for system in systems:
+            system_info = f"SID: {system['sid']}\n"
+            system_info += f"Description: {system['description']}\n"
+            system_info += f"Type: {system['type']}\n"
+            system_info += f"Components: {', '.join(system['components'])}"
+            
+            content.append({"type": "text", "text": system_info})
+        
+        return {
+            "content": content,
+            "isError": False
+        }
+    except Exception as e:
+        logging.error(f"Error listing SAP systems: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error listing SAP systems: {str(e)}"}],
             "isError": True
         }
 

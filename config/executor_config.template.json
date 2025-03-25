@@ -1,0 +1,45 @@
+{
+    "systems": {
+        "EXAMPLE_SID": {
+            "description": "Example SAP System",
+            "type": "SAP_HANA",
+            "sid": "EXAMPLE_SID",
+            "ssh": {
+                "username": "your_ssh_username",
+                "key_file": "/path/to/your/key.pem",
+                "use_key_auth": true,
+                "key_requires_passphrase": false
+            },
+            "sap_users": {
+                "sidadm": {
+                    "username": "sidadm",
+                    "password": "your_sidadm_password"
+                },
+                "dbadm": {
+                    "username": "hdbadm",
+                    "password": "your_hdbadm_password"
+                }
+            },
+            "components": {
+                "db": {
+                    "type": "database",
+                    "hostname": "your_db_hostname",
+                    "instance_number": "00"
+                },
+                "app": {
+                    "type": "application",
+                    "hostname": "your_app_hostname",
+                    "instance_number": "00"
+                }
+            }
+        }
+    },
+    "ssh": {
+        "username": "default_ssh_username",
+        "password": "",
+        "use_key_auth": false,
+        "key_requires_passphrase": false,
+        "port": 22,
+        "connection_timeout": 10
+    }
+}

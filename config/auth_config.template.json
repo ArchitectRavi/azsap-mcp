@@ -1,0 +1,27 @@
+{
+    "users": {
+        "admin": "your_admin_password",
+        "sap_user": "your_sap_user_password",
+        "hana_user": "your_hana_user_password"
+    },
+    "user_roles": {
+        "admin": ["ADMIN"],
+        "sap_user": ["SAP_ADMIN"],
+        "hana_user": ["HANA_ADMIN"]
+    },
+    "role_permissions": {
+        "ADMIN": [
+            "SAP_VIEW", "SAP_START", "SAP_STOP", "SAP_RESTART",
+            "HANA_VIEW", "HANA_START", "HANA_STOP", "HANA_RESTART",
+            "OS_VIEW", "HANA_ADMIN"
+        ],
+        "SAP_ADMIN": [
+            "SAP_VIEW", "SAP_START", "SAP_STOP", "SAP_RESTART",
+            "OS_VIEW"
+        ],
+        "HANA_ADMIN": [
+            "HANA_VIEW", "HANA_START", "HANA_STOP", "HANA_RESTART",
+            "OS_VIEW", "HANA_ADMIN"
+        ]
+    }
+}
