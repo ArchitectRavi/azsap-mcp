@@ -496,6 +496,399 @@ async def list_sap_systems(auth_context: Dict[str, Any] = None) -> Dict[str, Any
             "isError": True
         }
 
+@mcp.tool()
+async def get_vm_status(
+    sid: str = None, 
+    vm_name: str = None, 
+    resource_group: str = None,
+    subscription_id: str = None,
+    component: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Get the status of an Azure VM.
+    
+    This tool retrieves the current status of an Azure VM, including power state,
+    provisioning state, and other details.
+    
+    Args:
+        sid: SAP System ID (optional, will use VM mappings from config if provided)
+        vm_name: Azure VM name (optional if sid is provided)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        component: Component name (e.g., "db", "app") when using sid
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.vm_operations import get_vm_status as get_vm_status_impl
+        result = await get_vm_status_impl(
+            sid=sid,
+            vm_name=vm_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            component=component,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error getting VM status: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting VM status: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def start_vm(
+    sid: str = None, 
+    vm_name: str = None, 
+    resource_group: str = None,
+    subscription_id: str = None,
+    component: str = None,
+    auth_context: Dict[str, Any] = None,
+    wait: bool = True,
+    timeout: int = 300
+) -> Dict[str, Any]:
+    """Start an Azure VM.
+    
+    This tool starts an Azure VM and optionally waits for it to reach the running state.
+    
+    Args:
+        sid: SAP System ID (optional, will use VM mappings from config if provided)
+        vm_name: Azure VM name (optional if sid is provided)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        component: Component name (e.g., "db", "app") when using sid
+        auth_context: Authentication context with Azure permissions
+        wait: Whether to wait for the VM to reach the running state
+        timeout: Maximum time to wait in seconds
+    """
+    try:
+        from tools.azure_tools.vm_operations import start_vm as start_vm_impl
+        result = await start_vm_impl(
+            sid=sid,
+            vm_name=vm_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            component=component,
+            auth_context=auth_context,
+            wait=wait,
+            timeout=timeout
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error starting VM: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error starting VM: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def stop_vm(
+    sid: str = None, 
+    vm_name: str = None, 
+    resource_group: str = None,
+    subscription_id: str = None,
+    component: str = None,
+    auth_context: Dict[str, Any] = None,
+    deallocate: bool = True,
+    wait: bool = True,
+    timeout: int = 300
+) -> Dict[str, Any]:
+    """Stop an Azure VM.
+    
+    This tool stops an Azure VM and optionally waits for it to reach the stopped state.
+    
+    Args:
+        sid: SAP System ID (optional, will use VM mappings from config if provided)
+        vm_name: Azure VM name (optional if sid is provided)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        component: Component name (e.g., "db", "app") when using sid
+        auth_context: Authentication context with Azure permissions
+        deallocate: Whether to deallocate the VM (releases compute resources and reduces cost)
+        wait: Whether to wait for the VM to reach the stopped state
+        timeout: Maximum time to wait in seconds
+    """
+    try:
+        from tools.azure_tools.vm_operations import stop_vm as stop_vm_impl
+        result = await stop_vm_impl(
+            sid=sid,
+            vm_name=vm_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            component=component,
+            auth_context=auth_context,
+            deallocate=deallocate,
+            wait=wait,
+            timeout=timeout
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error stopping VM: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error stopping VM: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def restart_vm(
+    sid: str = None, 
+    vm_name: str = None, 
+    resource_group: str = None,
+    subscription_id: str = None,
+    component: str = None,
+    auth_context: Dict[str, Any] = None,
+    wait: bool = True,
+    timeout: int = 600
+) -> Dict[str, Any]:
+    """Restart an Azure VM.
+    
+    This tool restarts an Azure VM and optionally waits for it to reach the running state.
+    
+    Args:
+        sid: SAP System ID (optional, will use VM mappings from config if provided)
+        vm_name: Azure VM name (optional if sid is provided)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        component: Component name (e.g., "db", "app") when using sid
+        auth_context: Authentication context with Azure permissions
+        wait: Whether to wait for the VM to reach the running state
+        timeout: Maximum time to wait in seconds
+    """
+    try:
+        from tools.azure_tools.vm_operations import restart_vm as restart_vm_impl
+        result = await restart_vm_impl(
+            sid=sid,
+            vm_name=vm_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            component=component,
+            auth_context=auth_context,
+            wait=wait,
+            timeout=timeout
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error restarting VM: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error restarting VM: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def list_vms(
+    sid: str = None,
+    resource_group: str = None,
+    subscription_id: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """List Azure VMs.
+    
+    This tool lists Azure VMs in a subscription or resource group.
+    
+    Args:
+        sid: SAP System ID (optional, will use resource group mapping from config if provided)
+        resource_group: Azure resource group (optional, will list VMs in all resource groups if not provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.vm_operations import list_vms as list_vms_impl
+        result = await list_vms_impl(
+            sid=sid,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error listing VMs: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error listing VMs: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def get_nsg_rules(
+    nsg_name: str,
+    resource_group: str = None,
+    subscription_id: str = None,
+    sid: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Get rules for a Network Security Group.
+    
+    This tool retrieves the security rules for an Azure Network Security Group.
+    
+    Args:
+        nsg_name: NSG name
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        sid: SAP System ID (optional, will use resource group mapping from config if provided)
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.nsg_operations import get_nsg_rules as get_nsg_rules_impl
+        result = await get_nsg_rules_impl(
+            nsg_name=nsg_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            sid=sid,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error getting NSG rules: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting NSG rules: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def list_nsgs(
+    resource_group: str = None,
+    subscription_id: str = None,
+    sid: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """List Network Security Groups.
+    
+    This tool lists Azure Network Security Groups in a subscription or resource group.
+    
+    Args:
+        resource_group: Azure resource group (optional, will list NSGs in all resource groups if not provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        sid: SAP System ID (optional, will use resource group mapping from config if provided)
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.nsg_operations import list_nsgs as list_nsgs_impl
+        result = await list_nsgs_impl(
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            sid=sid,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error listing NSGs: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error listing NSGs: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def get_resource_groups(
+    subscription_id: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Get Azure resource groups.
+    
+    This tool retrieves the list of resource groups in an Azure subscription.
+    
+    Args:
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.resource_info import get_resource_groups as get_resource_groups_impl
+        result = await get_resource_groups_impl(
+            subscription_id=subscription_id,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error getting resource groups: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting resource groups: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def get_vm_details(
+    sid: str = None,
+    vm_name: str = None,
+    resource_group: str = None,
+    subscription_id: str = None,
+    component: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Get detailed information about an Azure VM.
+    
+    This tool retrieves detailed information about an Azure VM, including hardware profile,
+    storage profile, network interfaces, and disks.
+    
+    Args:
+        sid: SAP System ID (optional, will use VM mappings from config if provided)
+        vm_name: Azure VM name (optional if sid is provided)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        component: Component name (e.g., "db", "app") when using sid
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.resource_info import get_vm_details as get_vm_details_impl
+        result = await get_vm_details_impl(
+            sid=sid,
+            vm_name=vm_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            component=component,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error getting VM details: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting VM details: {str(e)}"}],
+            "isError": True
+        }
+
+@mcp.tool()
+async def get_vm_metrics(
+    sid: str = None,
+    vm_name: str = None,
+    resource_group: str = None,
+    subscription_id: str = None,
+    component: str = None,
+    metric_names: List[str] = None,
+    time_grain: str = "PT1H",
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Get metrics for an Azure VM.
+    
+    This tool retrieves metrics for an Azure VM, such as CPU usage, memory usage,
+    disk I/O, and network I/O.
+    
+    Args:
+        sid: SAP System ID (optional, will use VM mappings from config if provided)
+        vm_name: Azure VM name (optional if sid is provided)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        component: Component name (e.g., "db", "app") when using sid
+        metric_names: List of metric names to retrieve (optional)
+        time_grain: Time grain for metrics (e.g., "PT1H" for 1 hour, "PT5M" for 5 minutes)
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.azure_tools.resource_info import get_vm_metrics as get_vm_metrics_impl
+        result = await get_vm_metrics_impl(
+            sid=sid,
+            vm_name=vm_name,
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            component=component,
+            metric_names=metric_names,
+            time_grain=time_grain,
+            auth_context=auth_context
+        )
+        return format_result_content(result)
+    except Exception as e:
+        logging.error(f"Error getting VM metrics: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting VM metrics: {str(e)}"}],
+            "isError": True
+        }
+
 async def main():
     """
     Main entry point for the MCP server.

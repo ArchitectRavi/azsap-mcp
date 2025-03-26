@@ -1,0 +1,25 @@
+{
+    "subscription_id": "your-subscription-id",
+    "tenant_id": "your-tenant-id",
+    "client_id": "your-client-id",
+    "client_secret": "your-client-secret",
+    "default_resource_group": "your-default-resource-group",
+    "systems": {
+        "EXAMPLE_SID": {
+            "description": "Example SAP System",
+            "resource_group": "your-resource-group",
+            "components": {
+                "db": {
+                    "type": "database",
+                    "vm_name": "your-db-vm-name",
+                    "nsg_name": "your-db-nsg-name"
+                },
+                "app": {
+                    "type": "application",
+                    "vm_name": "your-app-vm-name",
+                    "nsg_name": "your-app-nsg-name"
+                }
+            }
+        }
+    }
+}
