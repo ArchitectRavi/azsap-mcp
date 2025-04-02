@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+
 """
 Azure Authentication Module
 
@@ -12,7 +15,7 @@ import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-from azure.identity import DefaultAzureCredential, ClientSecretCredential
+from azure.identity import DefaultAzureCredential, ClientSecretCredential, ManagedIdentityCredential
 from azure.core.exceptions import ClientAuthenticationError
 
 # Configure logging
@@ -20,12 +23,13 @@ logger = logging.getLogger(__name__)
 
 def get_azure_config() -> Dict[str, Any]:
     """
-    Load Azure configuration from config file
+    Load Azure configuration from config file and supplement with Key Vault secrets
     
     Returns:
         Dict[str, Any]: Azure configuration
     """
     try:
+        # Load base configuration from file
         config_path = Path(__file__).parent.parent.parent / "config" / "azure_config.json"
         if not config_path.exists():
             logger.warning(f"Azure config file not found at {config_path}")
@@ -33,11 +37,78 @@ def get_azure_config() -> Dict[str, Any]:
             
         with open(config_path, "r") as f:
             config = json.load(f)
+        
+        # If Key Vault details are provided, fetch secrets
+        if "key_vault" in config and "url" in config["key_vault"]:
+            key_vault_url = config["key_vault"]["url"]
+            
+            # Use DefaultAzureCredential for authenticating to Key Vault
+            credential = DefaultAzureCredential()
+            secret_client = SecretClient(vault_url=key_vault_url, credential=credential)
+            
+            # List of secret names to fetch
+            secret_names = config["key_vault"].get("secrets", [
+                "azure-subscription-id",
+                "azure-tenant-id", 
+                "azure-client-id", 
+                "azure-client-secret"
+            ])
+            
+            # Fetch secrets from Key Vault
+            for secret_name in secret_names:
+                try:
+                    secret = secret_client.get_secret(secret_name)
+                    
+                    # Map secret names to config keys
+                    key_mapping = {
+                        "azure-subscription-id": "subscription_id",
+                        "azure-tenant-id": "tenant_id",
+                        "azure-client-id": "client_id",
+                        "azure-client-secret": "client_secret"
+                    }
+                    
+                    # If the secret name is in our mapping, use mapped name
+                    # otherwise use the secret name directly
+                    config_key = key_mapping.get(secret_name, secret_name)
+                    config[config_key] = secret.value
+                    
+                    logger.info(f"Retrieved secret {secret_name} from Key Vault")
+                except Exception as e:
+                    logger.error(f"Error retrieving secret {secret_name}: {e}")
+        
+        # If essential credentials are missing from config, try to get them from environment variables
+        if "subscription_id" not in config or "tenant_id" not in config or "client_id" not in config or "client_secret" not in config:
+            env_creds = get_env_credentials()
+            for key, value in env_creds.items():
+                if key not in config or not config[key]:
+                    config[key] = value
+                    logger.info(f"Retrieved {key} from environment variables")
             
         return config
     except Exception as e:
         logger.error(f"Error loading Azure config: {e}")
         return {}
+
+def get_env_credentials() -> Dict[str, Any]:
+    """
+    Get Azure credentials from environment variables as a fallback
+    
+    Returns:
+        Dict[str, Any]: Azure credentials from environment
+    """
+    creds = {}
+    
+    # Check for basic Azure credentials in environment
+    if os.environ.get("AZURE_SUBSCRIPTION_ID"):
+        creds["subscription_id"] = os.environ.get("AZURE_SUBSCRIPTION_ID")
+    if os.environ.get("AZURE_TENANT_ID"):
+        creds["tenant_id"] = os.environ.get("AZURE_TENANT_ID")
+    if os.environ.get("AZURE_CLIENT_ID"):
+        creds["client_id"] = os.environ.get("AZURE_CLIENT_ID")
+    if os.environ.get("AZURE_CLIENT_SECRET"):
+        creds["client_secret"] = os.environ.get("AZURE_CLIENT_SECRET")
+        
+    return creds
 
 def get_azure_credential(tenant_id: Optional[str] = None) -> Any:
     """
@@ -68,6 +139,16 @@ def get_azure_credential(tenant_id: Optional[str] = None) -> Any:
                 client_id=client_id,
                 client_secret=client_secret
             )
+        
+        # If only client_id is available but no client_secret, try managed identity
+        if "client_id" in config and tenant_id:
+            client_id = config.get("client_id")
+            logger.info(f"Using managed identity authentication for Azure with client_id: {client_id}")
+            try:
+                return ManagedIdentityCredential(client_id=client_id)
+            except Exception as e:
+                logger.warning(f"Failed to use managed identity with client_id: {e}")
+                # Fall through to DefaultAzureCredential
         
         # Otherwise, use DefaultAzureCredential which tries multiple authentication methods
         logger.info(f"Using default authentication for Azure")
