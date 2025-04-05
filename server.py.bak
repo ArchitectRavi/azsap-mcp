@@ -25,8 +25,6 @@ from azure.mgmt.apimanagement import ApiManagementClient
 from azure.mgmt.apimanagement.models import AuthorizationContract, AuthorizationAccessPolicyContract, AuthorizationLoginRequestContract
 import decimal
 import sys
-# Import the prompt_handlers module
-import prompt_handlers
 
 # Load environment variables
 load_dotenv()
@@ -113,10 +111,6 @@ def initialize_server():
         # For example, test database connections if needed
         # or pre-cache system view structures
         
-        # Register prompt and resource handlers
-        asyncio.create_task(prompt_handlers.register_prompt_handlers(mcp))
-        asyncio.create_task(prompt_handlers.register_resource_handlers(mcp))
-        
         _server_initialized = True
         logging.info("SAP HANA MCP server initialization completed successfully")
     except Exception as e:
@@ -172,7 +166,7 @@ async def get_db_info(use_system_db: bool = True) -> Dict[str, Any]:
         }
 
 @mcp.tool()
-async def get_backup_catalog_simple(use_system_db: bool = True) -> Dict[str, Any]:
+async def get_backup_catalog(use_system_db: bool = True) -> Dict[str, Any]:
     """Get the backup catalog information from SAP HANA.
     
     This uses the M_BACKUP_CATALOG system view.
@@ -1018,9 +1012,12 @@ async def get_sap_inventory_summary_tool(
                 return format_result_content(result.get('summary', 'Summary data missing'))
             else:
                 # Return the error message from the implementation
-                return {"content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}], "isError": True}
+                return {
+                    "content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}],
+                    "isError": True
+                }
         else:
-            # Handle unexpected format
+            # Handle unexpected format from implementation
             logging.warning(f"Unexpected result format from get_sap_inventory_summary: {result}")
             return {"content": [{"type": "text", "text": "Unexpected result format from tool implementation."}], "isError": True}
             
@@ -1049,20 +1046,15 @@ async def check_sap_vm_compliance_tool(
     It validates VM series, memory, CPU cores, premium storage, and accelerated networking.
     
     Args:
-        vm_name (str): Azure VM name
-        sap_component_type (str): SAP component type (HANA, Oracle, MSSQL, Db2, ASE)
-        resource_group (str, optional): Resource group name
-        subscription_id (str, optional): Subscription ID
-        sid (str, optional): SAP System ID
-        auth_context (Dict[str, Any], optional): Authentication context
-        
-    Returns:
-        Dict[str, Any]: Compliance check results or error message
+        vm_name: Azure VM name
+        sap_component_type: SAP component type (HANA, Oracle, MSSQL, Db2, ASE)
+        resource_group: Azure resource group (optional if sid is provided)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        sid: SAP System ID (optional, will use resource group mapping from config if provided)
+        auth_context: Authentication context with Azure permissions
     """
     try:
-        # Import locally
         from tools.sap_inventory.vm_compliance import check_vm_compliance
-        
         result = await check_vm_compliance(
             vm_name=vm_name,
             sap_component_type=sap_component_type,
@@ -1071,13 +1063,12 @@ async def check_sap_vm_compliance_tool(
             sid=sid,
             auth_context=auth_context
         )
-        
-        # Process result
+        # Refined: Check status and format accordingly
         if isinstance(result, dict) and 'status' in result:
             if result['status'] == 'success':
                 # Return the structured success data as JSON
                 return {
-                    "content": [{"type": "json", "json": json.dumps(result.get('data', {}), cls=DecimalEncoder)}], 
+                    "content": [{"type": "json", "json": json.dumps(result, cls=DecimalEncoder)}], 
                     "isError": False
                 }
             else:
@@ -1804,20 +1795,25 @@ async def trigger_hana_backup_tool(
     This tool initiates a backup for either the system database or a tenant database.
     
     Args:
-        sid: SAP System ID
-        instance_number: HANA instance number (optional, will use default from config if not provided)
-        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
-        backup_type: Type of backup to perform ('COMPLETE', 'INCREMENTAL', 'DIFFERENTIAL', 'LOG')
-        database_name: Name of the tenant database (if not using system DB)
-        use_system_db: Whether to back up the system database (True) or tenant database (False)
-        comment: Comment to add to the backup
-        destination_path: Custom destination path for the backup
-        auth_context: Authentication context
-        wait: Whether to wait for backup completion
-        timeout: Maximum time to wait in seconds
+        sid (str): SAP System ID
+        instance_number (str, optional): Instance number (when not using SID-based configuration)
+        host (str, optional): Host where HANA is running (when not using SID-based configuration)
+        backup_type (str): Type of backup to perform ('COMPLETE', 'INCREMENTAL', 'DIFFERENTIAL', 'LOG')
+        database_name (str, optional): Name of the tenant database (if not using system DB)
+        use_system_db (bool): Whether to back up the system database (True) or tenant database (False)
+        comment (str, optional): Comment to add to the backup
+        destination_path (str, optional): Custom destination path for the backup
+        auth_context (dict, optional): Authentication context
+        wait (bool): Whether to wait for backup completion
+        timeout (int): Maximum time to wait in seconds
+        
+    Returns:
+        Dict[str, Any]: Operation result
     """
     try:
+        # Import locally
         from tools.hana_backup import trigger_hana_backup
+        
         result = await trigger_hana_backup(
             sid=sid,
             instance_number=instance_number,
@@ -1835,9 +1831,8 @@ async def trigger_hana_backup_tool(
         # Process result
         if isinstance(result, dict) and 'status' in result:
             if result['status'] == 'success':
-                # Return the structured success data as JSON
                 return {
-                    "content": [{"type": "json", "json": json.dumps(result, cls=DecimalEncoder)}], 
+                    "content": [{"type": "json", "json": json.dumps(result, cls=DecimalEncoder)}],
                     "isError": False
                 }
             else:
@@ -1846,7 +1841,7 @@ async def trigger_hana_backup_tool(
         else:
             # Handle unexpected format
             logging.warning(f"Unexpected result format from trigger_hana_backup: {result}")
-            return {"content": [{"type": "text", "text": "Unexpected result format from tool implementation."}], "isError": True}
+            return {"content": [{"type": "text", "text": "Unexpected result format from backup implementation."}], "isError": True}
             
     except ModuleNotFoundError:
         logging.error("Failed to import hana_backup tool implementation.", exc_info=True)
@@ -1873,19 +1868,21 @@ async def get_backup_catalog_tool(
     This uses the M_BACKUP_CATALOG system view.
     
     Args:
-        sid: SAP System ID
-        instance_number: HANA instance number (optional, will use default from config if not provided)
-        host: The hostname or IP address of the target system (optional, will use default from config if not provided)
-        use_system_db: Whether to use the system database (recommended for administration)
-        database_name: Name of the tenant database (if not using system DB)
-        limit: Maximum number of backup entries to return
-        auth_context: Authentication context
+        sid (str): SAP System ID
+        instance_number (str, optional): Instance number (when not using SID-based configuration)
+        host (str, optional): Host where HANA is running (when not using SID-based configuration)
+        use_system_db (bool): Whether to query the system database
+        database_name (str, optional): Name of the tenant database (if not using system DB)
+        limit (int): Maximum number of backup entries to return
+        auth_context (dict, optional): Authentication context
+        
+    Returns:
+        Dict[str, Any]: Operation result with backup catalog information
     """
     try:
-        # Import locally to avoid startup-time dependency
+        # Import locally
         from tools.hana_backup import get_backup_catalog
         
-        # Call the implementation
         result = await get_backup_catalog(
             sid=sid,
             instance_number=instance_number,
@@ -1896,12 +1893,11 @@ async def get_backup_catalog_tool(
             auth_context=auth_context
         )
         
-        # Check if the result is a dictionary with a "status" field
-        if isinstance(result, dict) and "status" in result:
-            if result["status"] == "success":
-                # Return successful result
+        # Process result
+        if isinstance(result, dict) and 'status' in result:
+            if result['status'] == 'success':
                 return {
-                    "content": [{"type": "json", "json": json.dumps(result, cls=DecimalEncoder)}], 
+                    "content": [{"type": "json", "json": json.dumps(result, cls=DecimalEncoder)}],
                     "isError": False
                 }
             else:
@@ -1910,7 +1906,7 @@ async def get_backup_catalog_tool(
         else:
             # Handle unexpected format
             logging.warning(f"Unexpected result format from get_backup_catalog: {result}")
-            return {"content": [{"type": "text", "text": "Unexpected result format from tool implementation."}], "isError": True}
+            return {"content": [{"type": "text", "text": "Unexpected result format from backup catalog implementation."}], "isError": True}
             
     except ModuleNotFoundError:
         logging.error("Failed to import hana_backup tool implementation.", exc_info=True)
@@ -1926,8 +1922,6 @@ async def main():
     """
     Main entry point for the MCP server.
     """
-    global mcp, _server_initialized
-    
     parser = argparse.ArgumentParser(description='SAP HANA MCP Server')
     parser.add_argument('--transport', choices=['stdio', 'http'], default='http',
                         help='Transport type (stdio or http)')
@@ -2071,6 +2065,142 @@ async def main():
             logging.error(f"Error starting server: {str(e)}")
             return {'error': 'server_start_failed', 'message': str(e)}
 
+@mcp.prompt("hana-backup")
+async def hana_backup_prompt(sid: str, use_system_db: bool = False, database_name: str = None):
+    """
+    Generate a guided prompt for HANA backup operations.
+    
+    Args:
+        sid (str): SAP System ID
+        use_system_db (bool): Whether to use the system database
+        database_name (str, optional): Name of tenant database if not using system DB
+        
+    Returns:
+        List of messages for the prompt
+    """
+    try:
+        # Import locally
+        from prompts.sap_prompts import get_hana_backup_prompt
+        
+        messages = await get_hana_backup_prompt(
+            sid=sid,
+            use_system_db=use_system_db,
+            database_name=database_name
+        )
+        
+        return messages
+    except Exception as e:
+        logging.error(f"Error generating HANA backup prompt: {str(e)}", exc_info=True)
+        return [
+            {
+                "role": "system",
+                "content": {
+                    "type": "text",
+                    "text": f"Error preparing HANA backup prompt: {str(e)}"
+                }
+            }
+        ]
+
+@mcp.prompt("hana-monitoring")
+async def hana_monitoring_prompt(sid: str):
+    """
+    Generate a guided prompt for HANA monitoring operations.
+    
+    Args:
+        sid (str): SAP System ID
+        
+    Returns:
+        List of messages for the prompt
+    """
+    try:
+        # Import locally
+        from prompts.sap_prompts import get_hana_monitoring_prompt
+        
+        messages = await get_hana_monitoring_prompt(
+            sid=sid
+        )
+        
+        return messages
+    except Exception as e:
+        logging.error(f"Error generating HANA monitoring prompt: {str(e)}", exc_info=True)
+        return [
+            {
+                "role": "system",
+                "content": {
+                    "type": "text",
+                    "text": f"Error preparing HANA monitoring prompt: {str(e)}"
+                }
+            }
+        ]
+
+@mcp.resource(r"^sap://.*")
+async def handle_sap_resource(uri: str):
+    """
+    Handle SAP resources.
+    
+    Args:
+        uri (str): Resource URI
+        
+    Returns:
+        Resource data
+    """
+    try:
+        # Import locally
+        from resources.sap_resources import get_sap_resource
+        
+        result = await get_sap_resource(uri)
+        
+        if result.get("status") == "success":
+            return {
+                "content": result.get("content", ""),
+                "contentType": result.get("content_type", "text/plain")
+            }
+        else:
+            return {
+                "content": result.get("content", f"Error: {result.get('message', 'Unknown error')}"),
+                "contentType": "text/plain"
+            }
+    except Exception as e:
+        logging.error(f"Error handling SAP resource: {str(e)}", exc_info=True)
+        return {
+            "content": f"Error handling resource: {str(e)}",
+            "contentType": "text/plain"
+        }
+
+@mcp.resource(r"^azure://.*")
+async def handle_azure_resource(uri: str):
+    """
+    Handle Azure resources.
+    
+    Args:
+        uri (str): Resource URI
+        
+    Returns:
+        Resource data
+    """
+    try:
+        # Import locally
+        from resources.sap_resources import get_sap_resource
+        
+        result = await get_sap_resource(uri)
+        
+        if result.get("status") == "success":
+            return {
+                "content": result.get("content", ""),
+                "contentType": result.get("content_type", "text/plain")
+            }
+        else:
+            return {
+                "content": result.get("content", f"Error: {result.get('message', 'Unknown error')}"),
+                "contentType": "text/plain"
+            }
+    except Exception as e:
+        logging.error(f"Error handling Azure resource: {str(e)}", exc_info=True)
+        return {
+            "content": f"Error handling resource: {str(e)}",
+            "contentType": "text/plain"
+        }
+
 if __name__ == '__main__':
     import sys
     
@@ -2105,3 +2235,56 @@ if __name__ == '__main__':
             sys.stderr.write(traceback.format_exc())
             sys.stderr.flush()
             sys.exit(1)
+
+@mcp.tool("get_sap_inventory_summary")
+async def get_sap_inventory_summary_tool(
+    resource_group: str = None,
+    subscription_id: str = None,
+    sid: str = None,
+    auth_context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Get summary of SAP systems and components in Azure.
+    
+    This tool analyzes Azure resources to identify SAP systems and their components.
+    It uses naming patterns and tags to identify different SAP components like databases,
+    application servers, and central services.
+    
+    Args:
+        resource_group: Azure resource group to filter resources (optional)
+        subscription_id: Azure subscription ID (optional, will use default from config if not provided)
+        sid: SAP System ID to filter resources (optional)
+        auth_context: Authentication context with Azure permissions
+    """
+    try:
+        from tools.sap_inventory.inventory_summary import get_sap_inventory_summary
+        result = await get_sap_inventory_summary(
+            resource_group=resource_group,
+            subscription_id=subscription_id,
+            sid=sid,
+            auth_context=auth_context
+        )
+        # Refined: Check status and format accordingly
+        if isinstance(result, dict) and 'status' in result:
+            if result['status'] == 'success':
+                # Pass only the summary data to the formatter on success
+                return format_result_content(result.get('summary', 'Summary data missing'))
+            else:
+                # Return the error message from the implementation
+                return {
+                    "content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}],
+                    "isError": True
+                }
+        else:
+            # Handle unexpected format from implementation
+            logging.warning(f"Unexpected result format from get_sap_inventory_summary: {result}")
+            return {"content": [{"type": "text", "text": "Unexpected result format from tool implementation."}], "isError": True}
+            
+    except ModuleNotFoundError:
+        logging.error("Failed to import inventory_summary tool implementation.", exc_info=True)
+        return {"content": [{"type": "text", "text": "Tool implementation (inventory_summary) not found."}], "isError": True}
+    except Exception as e:
+        logging.error(f"Error getting SAP inventory summary: {str(e)}", exc_info=True)
+        return {
+            "content": [{"type": "text", "text": f"Error getting SAP inventory summary: {str(e)}"}],
+            "isError": True
+        }
