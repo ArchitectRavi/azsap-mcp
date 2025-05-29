@@ -9,37 +9,65 @@ References:
 """
 
 import asyncio
-import argparse
+import platform
+import sys
+import os
+import logging
+import anyio
 from typing import Any, Dict, List, Optional, Union
+import uuid
+from starlette.applications import Starlette
+from starlette.routing import Route
+from starlette.responses import Response, JSONResponse
+from starlette.requests import Request
+from sse_starlette.sse import EventSourceResponse
+
+# Windows-specific configuration
+if platform.system() == "Windows":
+    # Required for subprocess support
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    # Workaround for OneDrive path sync issues
+    sys._enablelegacywindowsfsencoding()
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Add the server directory to PYTHONPATH
+server_dir = os.path.dirname(os.path.abspath(__file__))
+if server_dir not in sys.path:
+    sys.path.insert(0, server_dir)
+
+import argparse
 from mcp.server.fastmcp import FastMCP, Context
-from mcp.server.sse import SseServerTransport
 from mcp.server import Server   
 import uvicorn
-import logging
 import json
-import os
+import decimal
 from dotenv import load_dotenv
 from hana_connection import hana_connection, execute_query, get_table_schema
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.apimanagement import ApiManagementClient
 from azure.mgmt.apimanagement.models import AuthorizationContract, AuthorizationAccessPolicyContract, AuthorizationLoginRequestContract
-import decimal
-import sys
+from starlette.responses import Response
 
 # Load environment variables
 load_dotenv()
 
 # Initialize the MCP server
-mcp = FastMCP("sap-hana-mcp")
+mcp_server = FastMCP("sap-azure-mcp")
 
 # Define server info
 server_info = {
-    "name": "sap-hana-mcp",
+    "name": "sap-azure-mcp",
     "version": "1.0.0"
 }
 
 # Set server info directly on mcp instance
-mcp.server_info = server_info
+mcp_server.server_info = server_info
 
 # Log initialization info
 logging.info("SAP HANA MCP Server initialized with updated server info")
@@ -118,7 +146,7 @@ def initialize_server():
         import traceback
         logging.error(traceback.format_exc())
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_system_overview(use_system_db: bool = True) -> Dict[str, Any]:
     """Get an overview of the SAP HANA system status, including host information,
     service status, and system resource usage.
@@ -132,7 +160,7 @@ async def get_system_overview(use_system_db: bool = True) -> Dict[str, Any]:
     from tools.system_overview import get_system_overview as get_system_overview_impl
     return await get_system_overview_impl(use_system_db)
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_disk_usage(use_system_db: bool = True) -> Dict[str, Any]:
     """Get disk usage information for the SAP HANA system, including volume sizes,
     data files, and log files.
@@ -146,7 +174,7 @@ async def get_disk_usage(use_system_db: bool = True) -> Dict[str, Any]:
     from tools.disk_usage import get_disk_usage as get_disk_usage_impl
     return await get_disk_usage_impl(use_system_db)
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_db_info(use_system_db: bool = True) -> Dict[str, Any]:
     """Get database information from SAP HANA.
     
@@ -165,7 +193,7 @@ async def get_db_info(use_system_db: bool = True) -> Dict[str, Any]:
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_backup_catalog(use_system_db: bool = True) -> Dict[str, Any]:
     """Get the backup catalog information from SAP HANA.
     
@@ -184,7 +212,7 @@ async def get_backup_catalog(use_system_db: bool = True) -> Dict[str, Any]:
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_failed_backups(use_system_db: bool = True) -> Dict[str, Any]:
     """Get information about failed or canceled backups from SAP HANA.
     
@@ -203,7 +231,7 @@ async def get_failed_backups(use_system_db: bool = True) -> Dict[str, Any]:
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_tablesize_on_disk(use_system_db: bool = True) -> Dict[str, Any]:
     """Get table sizes on disk from SAP HANA.
     
@@ -222,7 +250,7 @@ async def get_tablesize_on_disk(use_system_db: bool = True) -> Dict[str, Any]:
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_table_used_memory(use_system_db: bool = True) -> Dict[str, Any]:
     """Get memory usage by table type (column vs row) from SAP HANA.
     
@@ -241,7 +269,7 @@ async def get_table_used_memory(use_system_db: bool = True) -> Dict[str, Any]:
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def check_disk_space(sid: str = None, host: str = None, filesystem: str = None, auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
     """Check disk space on SAP/HANA systems.
     
@@ -277,7 +305,7 @@ async def check_disk_space(sid: str = None, host: str = None, filesystem: str = 
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def check_hana_volumes(sid: str = None, host: str = None, auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
     """Check HANA data volumes and their disk usage.
     
@@ -311,7 +339,7 @@ async def check_hana_volumes(sid: str = None, host: str = None, auth_context: Di
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def manage_hana_system(sid: str = None, instance_number: str = None, host: str = None, action: str = None, 
                              auth_context: Dict[str, Any] = None, wait: bool = True, 
                              timeout: int = 300) -> Dict[str, Any]:
@@ -369,7 +397,7 @@ async def manage_hana_system(sid: str = None, instance_number: str = None, host:
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def check_hana_status(sid: str = None, instance_number: str = None, host: str = None, 
                            auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
     """Check HANA database status.
@@ -416,7 +444,7 @@ async def check_hana_status(sid: str = None, instance_number: str = None, host: 
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_hana_version(sid: str = None, instance_number: str = None, host: str = None, 
                            auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
     """Get HANA database version information.
@@ -464,7 +492,7 @@ async def get_hana_version(sid: str = None, instance_number: str = None, host: s
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def list_sap_systems(auth_context: Dict[str, Any] = None) -> Dict[str, Any]:
     """List all configured SAP systems.
     
@@ -502,7 +530,7 @@ async def list_sap_systems(auth_context: Dict[str, Any] = None) -> Dict[str, Any
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_vm_status(
     sid: str = None, 
     vm_name: str = None, 
@@ -542,7 +570,7 @@ async def get_vm_status(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def start_vm(
     sid: str = None, 
     vm_name: str = None, 
@@ -587,7 +615,7 @@ async def start_vm(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def stop_vm(
     sid: str = None, 
     vm_name: str = None, 
@@ -635,7 +663,7 @@ async def stop_vm(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def restart_vm(
     sid: str = None, 
     vm_name: str = None, 
@@ -680,7 +708,7 @@ async def restart_vm(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def list_vms(
     sid: str = None,
     resource_group: str = None,
@@ -713,7 +741,7 @@ async def list_vms(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_nsg_rules(
     nsg_name: str,
     resource_group: str = None,
@@ -749,7 +777,7 @@ async def get_nsg_rules(
             "isError": True
         }
 
-@mcp.tool("list_nsgs")
+@mcp_server.tool("list_nsgs")
 async def list_nsgs(
     resource_group: str = None,
     subscription_id: str = None,
@@ -782,7 +810,7 @@ async def list_nsgs(
             "isError": True
         }
 
-@mcp.tool("add_nsg_rule")
+@mcp_server.tool("add_nsg_rule")
 async def add_nsg_rule(
     nsg_name: str,
     rule_name: str,
@@ -860,14 +888,14 @@ async def add_nsg_rule(
             "isError": True
         }
 
-@mcp.tool("remove_nsg_rule")
+@mcp_server.tool("remove_nsg_rule")
 async def remove_nsg_rule(
     nsg_name: str,
     rule_name: str,
-    resource_group: str = None,
-    subscription_id: str = None,
-    sid: str = None,
-    auth_context: Dict[str, Any] = None
+    resource_group: Optional[str] = "",
+    subscription_id: Optional[str] = "",
+    sid: Optional[str] = "",
+    auth_context: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """Remove a rule from a Network Security Group.
     
@@ -899,7 +927,7 @@ async def remove_nsg_rule(
             "isError": True
         }
 
-@mcp.tool("update_nsg_rule")
+@mcp_server.tool("update_nsg_rule")
 async def update_nsg_rule(
     nsg_name: str,
     rule_name: str,
@@ -978,7 +1006,7 @@ async def update_nsg_rule(
             "isError": True
         }
 
-@mcp.tool("get_sap_inventory_summary")
+@mcp_server.tool("get_sap_inventory_summary")
 async def get_sap_inventory_summary_tool(
     resource_group: str = None,
     subscription_id: str = None,
@@ -1012,17 +1040,12 @@ async def get_sap_inventory_summary_tool(
                 return format_result_content(result.get('summary', 'Summary data missing'))
             else:
                 # Return the error message from the implementation
-                return {
-                    "content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}],
-                    "isError": True
-                }
+                return {"content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}], "isError": True}
         else:
             # Handle unexpected format from implementation
             logging.warning(f"Unexpected result format from get_sap_inventory_summary: {result}")
-            return {
-                "content": [{"type": "text", "text": "Unexpected result format from tool implementation."}],
-                "isError": True
-            }
+            return {"content": [{"type": "text", "text": "Unexpected result format from tool implementation."}], "isError": True}
+            
     except ModuleNotFoundError:
         logging.error("Failed to import inventory_summary tool implementation.", exc_info=True)
         return {"content": [{"type": "text", "text": "Tool implementation (inventory_summary) not found."}], "isError": True}
@@ -1033,7 +1056,7 @@ async def get_sap_inventory_summary_tool(
             "isError": True
         }
 
-@mcp.tool("check_sap_vm_compliance")
+@mcp_server.tool("check_sap_vm_compliance")
 async def check_sap_vm_compliance_tool(
     vm_name: str,
     sap_component_type: str = "HANA",  # Options: HANA, AnyDB, App
@@ -1074,18 +1097,13 @@ async def check_sap_vm_compliance_tool(
                     "isError": False
                 }
             else:
-                # Return the error message from the implementation
-                return {
-                    "content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}],
-                    "isError": True
-                }
+                # Return error message
+                return {"content": [{"type": "text", "text": result.get('message', 'Unknown error occurred')}], "isError": True}
         else:
-            # Handle unexpected format from implementation
+            # Handle unexpected format
             logging.warning(f"Unexpected result format from check_vm_compliance: {result}")
-            return {
-                "content": [{"type": "text", "text": "Unexpected result format from tool implementation."}],
-                "isError": True
-            }
+            return {"content": [{"type": "text", "text": "Unexpected result format from tool implementation."}], "isError": True}
+            
     except ModuleNotFoundError:
         logging.error("Failed to import vm_compliance tool implementation.", exc_info=True)
         return {"content": [{"type": "text", "text": "Tool implementation (vm_compliance) not found."}], "isError": True}
@@ -1096,7 +1114,7 @@ async def check_sap_vm_compliance_tool(
             "isError": True
         }
 
-@mcp.tool("run_sap_workbook_check")
+@mcp_server.tool("run_sap_workbook_check")
 async def run_sap_workbook_check_tool(
     check_name: str, # Name of the check/query to run (must match key in workbook_checker.py)
     vis_id: Optional[str] = None, # Azure Resource ID of the VIS to scope the query
@@ -1154,7 +1172,7 @@ async def run_sap_workbook_check_tool(
             "isError": True
         }
 
-@mcp.tool("run_sap_quality_check")
+@mcp_server.tool("run_sap_quality_check")
 async def run_sap_quality_check_tool(
     vm_name: str, 
     vm_role: str = "DB", 
@@ -1239,7 +1257,7 @@ async def run_sap_quality_check_tool(
             "isError": True
         }
 
-@mcp.tool("get_sap_quality_check_definitions")
+@mcp_server.tool("get_sap_quality_check_definitions")
 async def get_sap_quality_check_definitions_tool(
     auth_context: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
@@ -1286,7 +1304,7 @@ async def get_sap_quality_check_definitions_tool(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_resource_groups(
     subscription_id: str = None,
     auth_context: Dict[str, Any] = None
@@ -1313,7 +1331,7 @@ async def get_resource_groups(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_vm_details(
     sid: str = None,
     vm_name: str = None,
@@ -1353,7 +1371,7 @@ async def get_vm_details(
             "isError": True
         }
 
-@mcp.tool()
+@mcp_server.tool()
 async def get_vm_metrics(
     sid: str = None,
     vm_name: str = None,
@@ -1399,7 +1417,7 @@ async def get_vm_metrics(
             "isError": True
         }
 
-@mcp.tool("add_disk")
+@mcp_server.tool("add_disk")
 async def add_disk(
     sid: str = None,
     vm_name: str = None,
@@ -1453,7 +1471,7 @@ async def add_disk(
             "isError": True
         }
 
-@mcp.tool("extend_disk")
+@mcp_server.tool("extend_disk")
 async def extend_disk(
     sid: str = None,
     vm_name: str = None,
@@ -1498,7 +1516,7 @@ async def extend_disk(
             "isError": True
         }
 
-@mcp.tool("remove_disk")
+@mcp_server.tool("remove_disk")
 async def remove_disk(
     sid: str = None,
     vm_name: str = None,
@@ -1543,7 +1561,7 @@ async def remove_disk(
             "isError": True
         }
 
-@mcp.tool("list_disks")
+@mcp_server.tool("list_disks")
 async def list_disks(
     sid: str = None,
     vm_name: str = None,
@@ -1583,7 +1601,7 @@ async def list_disks(
             "isError": True
         }
 
-@mcp.tool("prepare_disk")
+@mcp_server.tool("prepare_disk")
 async def prepare_disk(
     sid: str = None,
     vm_name: str = None,
@@ -1641,16 +1659,16 @@ async def prepare_disk(
             "isError": True
         }
 
-@mcp.tool("extend_filesystem")
+@mcp_server.tool("extend_filesystem")
 async def extend_filesystem(
-    sid: str = None,
-    vm_name: str = None,
-    resource_group: str = None,
-    subscription_id: str = None,
-    component: str = None,
-    auth_context: Dict[str, Any] = None,
-    disk_name: str = None,
-    mount_point: str = None
+    sid: Optional[str] = "",
+    vm_name: Optional[str] = "",
+    resource_group: Optional[str] = "",
+    subscription_id: Optional[str] = "",
+    component: Optional[str] = "",
+    auth_context: Optional[Dict[str, Any]] = {},
+    disk_name: Optional[str] = "",
+    mount_point: Optional[str] = ""
 ) -> Dict[str, Any]:
     """Extend a filesystem after resizing the underlying disk.
     
@@ -1686,7 +1704,7 @@ async def extend_filesystem(
             "isError": True
         }
 
-@mcp.tool("cleanup_disk")
+@mcp_server.tool("cleanup_disk")
 async def cleanup_disk(
     sid: str = None,
     vm_name: str = None,
@@ -1734,7 +1752,7 @@ async def cleanup_disk(
             "isError": True
         }
 
-@mcp.tool("resize_vm")
+@mcp_server.tool("resize_vm")
 async def resize_vm(
     sid: str = None,
     vm_name: str = None,
@@ -1792,8 +1810,8 @@ async def main():
                         help='Transport type (stdio or http)')
     parser.add_argument('--host', default='0.0.0.0',
                         help='Host to bind to (HTTP only)')
-    parser.add_argument('--port', type=int, default=3000,
-                        help='Port to bind to (HTTP only)')
+    parser.add_argument('--port', type=int, default=8081,
+                        help='Port to run the server on')
     parser.add_argument('--debug', action='store_true',
                         help='Enable debug logging')
     parser.add_argument('--auto-reload', action='store_true',
@@ -1851,7 +1869,7 @@ async def main():
     else:
         # For HTTP transport, use the sse_app method with Starlette
         from starlette.applications import Starlette
-        from starlette.routing import Mount
+        from starlette.routing import Route, Mount
         from starlette.middleware import Middleware
         from starlette.middleware.cors import CORSMiddleware
         from uvicorn import Config, Server
@@ -1893,12 +1911,206 @@ async def main():
             )
         ]
         
-        # Customize the MCP server to be more responsive during initialization
-        mcp_app = mcp.sse_app()
+        # Create SSE transport
+        connected_clients = {}
         
-        # Create a Starlette app with the MCP SSE app mounted
+        # Define route handlers as ASGI applications
+        async def handle_message(request: Request):
+            logger.info(f"Handling message request: {request}")
+            try:
+                # Handle GET requests as SSE streams
+                if request.method == "GET":
+                    client_id = request.headers.get("Mcp-Session-Id") or str(uuid.uuid4())
+                    logger.info(f"New SSE stream for client: {client_id}")
+                    
+                    # Create or get existing client data
+                    if client_id not in connected_clients:
+                        connected_clients[client_id] = {
+                            "queue": asyncio.Queue(),
+                            "pending_requests": {},
+                            "initialized": False
+                        }
+                        
+                    client_data = connected_clients[client_id]
+                    
+                    # Define the SSE event generator
+                    async def event_generator():
+                        try:
+                            while True:
+                                try:
+                                    # Wait for messages with a timeout to allow periodic pings
+                                    message = await asyncio.wait_for(client_data["queue"].get(), timeout=30)
+                                    yield {
+                                        "event": "message",
+                                        "data": json.dumps(message)
+                                    }
+                                    client_data["queue"].task_done()
+                                except asyncio.TimeoutError:
+                                    # Send a ping to keep the connection alive
+                                    yield {
+                                        "event": "ping",
+                                        "data": json.dumps({
+                                            "jsonrpc": "2.0", 
+                                            "method": "connection/ping"
+                                        })
+                                    }
+                        except asyncio.CancelledError:
+                            logger.info(f"SSE stream closed for client: {client_id}")
+                            raise
+                    
+                    # Return SSE response with session ID header
+                    return EventSourceResponse(
+                        event_generator(),
+                        headers={"Mcp-Session-Id": client_id}
+                    )
+                
+                # Handle POST requests
+                elif request.method == "POST":
+                    client_id = request.headers.get("Mcp-Session-Id")
+                    if not client_id:
+                        return JSONResponse(
+                            status_code=400,
+                            content={"error": "Missing Mcp-Session-Id header"}
+                        )
+                    
+                    # Parse the message from the request
+                    data = await request.json()
+                    message = data.get("message", {})
+                    
+                    # Get the client data
+                    client_data = connected_clients.get(client_id)
+                    if not client_data:
+                        return JSONResponse(
+                            status_code=404,
+                            content={"error": f"Client {client_id} not found"}
+                        )
+                    
+                    client_queue = client_data["queue"]
+                    
+                    # Process the JSON-RPC message
+                    if isinstance(message, dict) and "method" in message:
+                        req_id = message.get("id")
+                        method = message.get("method")
+                        params = message.get("params", {})
+                        
+                        # Handle different method types
+                        response = None
+                        
+                        if method == "initialize":
+                            # Handle initialize request
+                            response = {
+                                "jsonrpc": "2.0",
+                                "id": req_id,
+                                "result": {
+                                    "protocolVersion": "2025-03-26",
+                                    "capabilities": {
+                                        "roots": {
+                                            "listChanged": True
+                                        },
+                                        "sampling": {},
+                                        "prompts": {
+                                            "listChanged": True
+                                        },
+                                        "resources": {
+                                            "listChanged": True
+                                        },
+                                        "tools": {
+                                            "listChanged": True
+                                        },
+                                        "logging": {}
+                                    },
+                                    "serverInfo": {
+                                        "name": "SAP Azure MCP Server",
+                                        "version": "1.0.0"
+                                    }
+                                }
+                            }
+                        elif method == "notifications/initialized":
+                            # Handle initialized notification
+                            client_data["initialized"] = True
+                            logger.info(f"Client {client_id} initialized successfully")
+                        elif method == "list_tools" and client_data["initialized"]:
+                            # Return available tools
+                            tools = []
+                            # Get tools from the MCP server
+                            for tool_name, tool_info in mcp_server.tools.items():
+                                tool_def = {
+                                    "name": tool_name,
+                                    "description": tool_info.get("description", f"Tool: {tool_name}"),
+                                    "parameters": tool_info.get("parameters", {}),
+                                    "returnType": tool_info.get("return_type", {"type": "object"})
+                                }
+                                tools.append(tool_def)
+                            
+                            response = {
+                                "jsonrpc": "2.0",
+                                "id": req_id,
+                                "result": {
+                                    "tools": tools
+                                }
+                            }
+                        elif method == "execute_tool" and client_data["initialized"]:
+                            # Handle tool execution
+                            tool_name = params.get("name")
+                            tool_params = params.get("parameters", {})
+                            
+                            try:
+                                # Execute the tool
+                                result = await mcp_server.execute_tool(tool_name, tool_params)
+                                
+                                # Send back the result
+                                response = {
+                                    "jsonrpc": "2.0",
+                                    "id": req_id,
+                                    "result": result
+                                }
+                            except Exception as tool_error:
+                                logger.error(f"Error executing tool {tool_name}: {str(tool_error)}", exc_info=True)
+                                response = {
+                                    "jsonrpc": "2.0",
+                                    "id": req_id,
+                                    "error": {
+                                        "code": -32000,
+                                        "message": f"Error executing tool: {str(tool_error)}"
+                                    }
+                                }
+                        else:
+                            # Unhandled method or not initialized
+                            response = {
+                                "jsonrpc": "2.0",
+                                "id": req_id,
+                                "error": {
+                                    "code": -32601 if client_data["initialized"] else -32002,
+                                    "message": f"Method not found: {method}" if client_data["initialized"] else "Server not initialized"
+                                }
+                            }
+                        
+                        # Queue the response if we have one
+                        if response:
+                            await client_queue.put(response)
+                    
+                    return JSONResponse(
+                        status_code=200,
+                        content={"status": "Message processed successfully"}
+                    )
+                
+                return Response(
+                    status_code=405,
+                    content="Method not allowed"
+                )
+                
+            except Exception as e:
+                logger.error(f"Error in message handler: {str(e)}", exc_info=True)
+                return JSONResponse(
+                    status_code=500, 
+                    content={"error": f"Internal server error: {str(e)}"}
+                )
+
+        # Add route to the FastAPI app
         app = Starlette(
-            routes=[Mount('/', app=mcp_app)],
+            routes=[
+                Route("/message", endpoint=handle_message, methods=["GET", "POST"]),
+            ],
             middleware=middleware
         )
         
@@ -1906,7 +2118,7 @@ async def main():
         config = Config(
             app=app, 
             host=args.host, 
-            port=port, 
+            port=port,
             log_level="debug" if args.debug else "info",
             reload=args.auto_reload,  # Enable auto-reload based on command-line argument
             log_config=None,  # Disable default Uvicorn logging configuration
@@ -1916,14 +2128,14 @@ async def main():
         #Print the server info
         print(f"Server started on {args.host}:{port}")
         logging.info(f"Server started on {args.host}:{port}")
-        print(f"\n=== MCP Server Starting ===")
+        print (f"\n=== MCP Server Starting ===")
         print(f"Binding to {args.host}:{port}")
         print (f"To connect from another machine, use {args.host}:{port}")
         print(f"Debug mode: {args.debug}")
         print(f"Auto-reload: {args.auto_reload}")
         print(f"Log file: {args.log_file}")
         print(f"Transport: {args.transport}")
-        print(f"\n=== MCP Server Started ===")
+        print (f"\n=== MCP Server Started ===")
         try:
             await server.serve()
         except Exception as e:
@@ -1957,7 +2169,7 @@ if __name__ == '__main__':
             sys.stderr.flush()
             
             # The FastMCP class has built-in support for stdio via run_stdio_async
-            asyncio.run(mcp.run_stdio_async())
+            asyncio.run(mcp_server.run_stdio_async())
         except Exception as e:
             sys.stderr.write(f"Error in stdio transport: {str(e)}\n")
             import traceback

@@ -5891,7 +5891,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -5919,7 +5919,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -5948,7 +5948,7 @@
                 { "Date": "initial", "ChangeLog": "" },
                 { "Date": "20220703", "ChangeLog": "new recommendations in SAP note" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -5977,7 +5977,7 @@
                 { "Date": "initial", "ChangeLog": "" },
                 { "Date": "20220703", "ChangeLog": "new recommendations in SAP note" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6005,7 +6005,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6033,7 +6033,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6061,7 +6061,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6089,7 +6089,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6117,7 +6117,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6145,7 +6145,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6173,7 +6173,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": "3024346"
         },
         {
@@ -6201,7 +6201,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6229,7 +6229,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6257,7 +6257,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6285,7 +6285,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6313,7 +6313,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6341,7 +6341,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6369,7 +6369,7 @@
             "VersionHistory": [
                 { "Date": "initial", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-hana-scale-out-standby-netapp-files-suse",
+            "MicrosoftDocs": "https://docs.microsoft.com/en-us/azure/virtual-machines/workloads/sap/sap-azure-mcp-scale-out-standby-netapp-files-suse",
             "SAPNote": ""
         },
         {
@@ -6388,7 +6388,7 @@
             "CommandType": "OS",
             "ProcessingCommand": "tuned-adm active",
             "PostProcessingCommand": "",
-            "ExpectedResult": "Current active profile: sap-hana",
+            "ExpectedResult": "Current active profile: sap-azure-mcp",
             "ShowAlternativeRequirement": "",
             "ShowAlternativeResult": "",
             "RootRequired": true,
@@ -7163,7 +7163,7 @@
                 { "Date": "initial", "ChangeLog": "" },
                 { "Date": "20231121", "ChangeLog": "add Premium SSD v2 and ANF" }
             ],
-            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability-rhel"],
+            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability-rhel"],
             "SAPNote": ""
         },
         {
@@ -7192,7 +7192,7 @@
                 { "Date": "initial", "ChangeLog": "" },
                 { "Date": "20231121", "ChangeLog": "add Premium SSD v2 and ANF" }
             ],
-            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability-rhel"],
+            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability-rhel"],
             "SAPNote": ""
         },
         {
@@ -7221,7 +7221,7 @@
                 { "Date": "initial", "ChangeLog": "" },
                 { "Date": "20231121", "ChangeLog": "add Premium SSD v2 and ANF" }
             ],
-            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability-rhel"],
+            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability-rhel"],
             "SAPNote": ""
         },
         {
@@ -7250,7 +7250,7 @@
             "VersionHistory": [
                 { "Date": "20231130", "ChangeLog": "" }
             ],
-            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability-rhel"],
+            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability-rhel"],
             "SAPNote": ""
         },
         {
@@ -7278,7 +7278,7 @@
             "VersionHistory": [
                 { "Date": "20240206", "ChangeLog": "new setting for high availability" }
             ],
-            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-hana-high-availability-rhel"],
+            "MicrosoftDocs": ["https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability", "https://learn.microsoft.com/en-us/azure/sap/workloads/sap-azure-mcp-high-availability-rhel"],
             "SAPNote": ""
         },
         {
