@@ -2,42 +2,65 @@
 
 **Note: This project is currently in active development and supports only a limited set of scenarios.**
 
-A simplified Model Context Protocol (MCP) server for SAP HANA built with the Python MCP SDK version 1.2.1.
+A comprehensive Model Context Protocol (MCP) server for SAP HANA and Azure operations built with the Python MCP SDK version 1.2.1.
+
+## 🚀 Quick Start
+
+**New to this project?** 
+- **Configuration & Setup**: See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete configuration instructions
+- **Quick Reference**: See **[CONFIG_REQUIREMENTS.md](CONFIG_REQUIREMENTS.md)** for configuration overview
+- **Automated Setup**: Run `setup.ps1` to copy template files automatically
 
 ## Overview
 
-This implementation follows the official MCP guidelines with a focus on simplicity and maintainability. It provides tools for interacting with SAP HANA databases through a standardized protocol that can be used by any MCP-compatible client.
+This MCP server provides 30+ specialized tools for SAP on Azure administration through a standardized protocol. Built with the official Python MCP SDK 1.2.1, it follows MCP best practices with a focus on simplicity, maintainability, and security. The server can be used by any MCP-compatible client including Claude Desktop, web applications, and custom integrations.
 
-## Features
+## Architecture & Features
 
+### MCP Protocol Compliance
+- **Standard MCP Implementation**: Built using official Python MCP SDK 1.2.1
 - **Multiple Transport Options**: Supports both STDIO and HTTP/SSE transports
-- **Focus on Core Functionality**: Implements essential tools to keep the codebase clean
-- **MCP Standard Compliance**: Built using the official Python MCP SDK 1.2.1
-- **Clean Connection Management**: Support for both System DB and Tenant DB
-- **Structured Error Handling**: Consistent error reporting across all tools
-- **Security Headers**: Proper security headers for HTTP transport
-- **Health Monitoring**: Health check endpoint for server status
-- **Docker Support**: Ready-to-use Dockerfile for containerized deployment
+- **Resource & Tool Support**: Implements MCP tools with structured error handling
+- **Health Monitoring**: HTTP transport includes health check endpoints
 
-## Implemented Tools
+### Core Capabilities
+- **SAP HANA Integration**: Direct connectivity with System DB and Tenant DB support
+- **Azure VM Lifecycle**: Complete Azure VM management for SAP workloads
+- **SAP System Administration**: SSH-based SAP system monitoring and control
+- **Role-Based Access Control**: User authentication and permission management
+- **Security**: Comprehensive input validation and security headers
+- **Containerization**: Docker-ready deployment configuration
 
-The server currently implements these essential tools:
+## MCP Tools (30+ Available)
 
-### System Management Tools
-1. **get_system_overview**: Get comprehensive system status information including host details, service status, and memory usage
-2. **get_disk_usage**: Monitor disk space usage across volumes, data files, and log files
+The server implements specialized tools organized by functional area:
 
-### Database Information Tools
-1. **get_db_info**: Retrieve database information from the M_DATABASE system view
-2. **get_backup_catalog**: Get backup catalog information from the M_BACKUP_CATALOG system view
-3. **get_failed_backups**: Retrieve information about failed or canceled backups
+### SAP HANA Database Tools (7 tools)
+- **System Monitoring**: `get_system_overview`, `get_disk_usage`, `get_db_info`
+- **Backup Management**: `get_backup_catalog`, `get_failed_backups`
+- **Performance Analysis**: `get_tablesize_on_disk`, `get_table_used_memory`
 
-### Performance Analysis Tools
-1. **get_tablesize_on_disk**: Get table sizes on disk from the PUBLIC.M_TABLE_PERSISTENCE_STATISTICS system view
-2. **get_table_used_memory**: Get memory usage by table type (column vs row) from the SYS.M_TABLES system view
+### Azure VM Management Tools (7 tools)
+- **VM Lifecycle**: `start_vm`, `stop_vm`, `restart_vm`, `resize_vm`
+- **VM Information**: `list_vms`, `get_vm_status`, `get_vm_details`
 
-### Note
-The server is actively being developed and more tools will be added in future releases.
+### Azure Disk Management Tools (6 tools)
+- **Disk Operations**: `add_disk`, `extend_disk`, `remove_disk`
+- **Disk Management**: `list_disks`, `prepare_disk`, `cleanup_disk`
+
+### SAP System Management Tools (5 tools)
+- **HANA Operations**: `check_hana_status`, `get_hana_version`, `manage_hana_system`
+- **System Monitoring**: `check_disk_space`, `check_hana_volumes`
+
+### SAP Quality & Compliance Tools (3 tools)
+- **Quality Validation**: `run_sap_quality_check`, `get_sap_quality_check_definitions`
+- **Compliance Check**: `check_sap_vm_compliance`
+
+### Azure Resource Management Tools (6 tools)
+- **Resource Discovery**: `get_resource_groups`, `get_sap_inventory_summary`
+- **Network Security**: `list_nsgs`, `get_nsg_rules`, `add_nsg_rule`, `update_nsg_rule`
+
+*For detailed tool documentation and usage examples, see the [SETUP_GUIDE.md](SETUP_GUIDE.md).*
 
 ## Project Structure
 
@@ -45,233 +68,196 @@ The server is actively being developed and more tools will be added in future re
 ├── server.py               # Main MCP server implementation
 ├── hana_connection.py      # HANA database connection management
 ├── requirements.txt        # Project dependencies
-├── .env.template           # Environment variables template
+├── .env                    # Environment variables (HANA & Azure credentials)
 ├── Dockerfile              # Docker configuration for containerization
-├── tools/                  # Directory for future tool implementations
-├── resources/              # Directory for future resource implementations
-└── prompts/                # Directory for future prompt templates
+├── SETUP_GUIDE.md          # Complete configuration setup instructions
+├── CONFIG_REQUIREMENTS.md  # Quick configuration reference
+├── setup.ps1               # PowerShell setup script for templates
+├── config/                 # Configuration files directory
+│   ├── *.template.json     # Template configuration files
+│   ├── executor_config.json    # SAP systems and SSH configuration
+│   ├── azure_config.json       # Azure subscription and VM mappings
+│   └── auth_config.json        # User authentication and roles
+├── tools/                  # MCP tool implementations
+│   ├── command_executor.py     # SSH command execution for SAP systems
+│   ├── azure_tools/            # Azure VM and resource management
+│   ├── sap_inventory/          # SAP system discovery and inventory
+│   └── *.py                    # Individual tool implementations
+└── auth/                   # Authentication and authorization
+    └── authentication.py       # User authentication and RBAC
 ```
 
 ## Getting Started
 
 ### Prerequisites
-
 - Python 3.8+
-- SAP HANA instance
-- MCP-compatible client (e.g., Claude desktop app)
+- SAP HANA instance access
+- Azure subscription (for Azure tools)
+- MCP-compatible client (Claude Desktop, web apps, etc.)
 
-### Installation
+### Installation & Configuration
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd azsap-mcp
 
-1. Clone the repository
-2. Create a virtual environment:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-3. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-4. Create a `.env` file from the template:
-   ```
-   cp .env.template .env
-   ```
-5. Edit the `.env` file with your SAP HANA connection details
+# 2. Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure the server (see SETUP_GUIDE.md for details)
+# Option A: Use PowerShell script (Windows)
+.\setup.ps1
+
+# Option B: Manual configuration
+# Copy template files and configure:
+# - .env (already exists with samples)
+# - config/executor_config.json
+# - config/azure_config.json  
+# - config/auth_config.json
+```
+
+📖 **Complete setup instructions**: [SETUP_GUIDE.md](SETUP_GUIDE.md)
 
 ### Running the Server
 
-#### Option 1: STDIO Transport (Default)
-
-For local use with desktop clients like Claude Desktop:
-
+#### STDIO Transport (Claude Desktop)
 ```bash
 python server.py
 ```
 
-#### Option 2: HTTP/SSE Transport
-
-For web-based or remote clients:
-
+#### HTTP/SSE Transport (Web clients)
 ```bash
 python server.py --transport http --host localhost --port 3000
 ```
 
-Additional options:
+**Available options:**
 - `--debug`: Enable debug logging
-- `--host`: Hostname to bind (default: localhost)
+- `--host`: Hostname to bind (default: localhost)  
 - `--port`: Port to bind (default: 3000)
 
-### Docker Deployment
-
-Build and run the server as a Docker container:
-
+#### Docker Deployment
 ```bash
-# Build the Docker image
-docker build -t sap-hana-mcp .
+# Build image
+docker build -t azsap-mcp .
 
-# Run with environment variables
+# Run with environment
 docker run -p 3000:3000 \
-  -e HANA_HOST=your-hana-host \
+  -e HANA_HOST=your-host \
   -e HANA_PORT=30215 \
-  -e HANA_USER=your-user \
-  -e HANA_PASSWORD=your-password \
-  -e HANA_SCHEMA=your-schema \
-  sap-hana-mcp
+  azsap-mcp
 ```
 
-## Testing with MCP Inspector
+## MCP Client Integration
 
-The MCP Inspector is a visual testing tool for MCP servers developed by Docker. It allows you to interact with the server and test the implemented tools.
-
-### Using MCP Inspector
-
-You can use the MCP Inspector without installing it permanently by using `npx`:
-
-1. Start the SAP HANA MCP server in one terminal:
-   ```bash
-   python server.py --transport http --host localhost --port 3000
-   ```
-
-2. In another terminal, use npx to run the MCP Inspector and connect to your server:
-   ```bash
-   npx @modelcontextprotocol/inspector http://localhost:3000
-   ```
-
-3. The inspector will start both:
-   - A client UI (default port 5173)
-   - An MCP proxy server (default port 3000)
-
-4. Open your browser to the client UI (typically http://localhost:5173) to use the inspector
-
-5. You can customize the ports if needed:
-   ```bash
-   CLIENT_PORT=8080 SERVER_PORT=9000 npx @modelcontextprotocol/inspector http://localhost:3000
-   ```
-
-### Testing the Server
-
-1. Once the MCP Inspector UI opens in your browser, you'll see the available tools.
-
-2. Test each tool by:
-   - Selecting a tool from the list
-   - Providing any required parameters
-   - Executing the tool and viewing the results
-
-3. Test the dynamic column discovery by trying tools with different SAP HANA instances. The tools will adapt to the available columns in your specific SAP HANA version.
-
-4. For more details on ways to use the inspector, see the [Inspector section of the MCP docs site](https://modelcontextprotocol.io/docs/tools/inspector).
-
-### Troubleshooting
-
-- If you encounter connection issues, ensure that:
-  - The server is running and accessible on the specified port
-  - Your SAP HANA connection details in the `.env` file are correct
-  - You have proper network access to the SAP HANA instance
-
-- For detailed error information, check the server logs which provide comprehensive debugging information about any issues that occur during tool execution.
-
-## Using with Claude Desktop App
-
-1. Ensure you have the latest version of the Claude Desktop app
-2. Configure Claude to use the MCP server by adding it to your `claude_desktop_config.json` file:
-
+### Claude Desktop App
+Add to your `claude_desktop_config.json`:
 ```json
 {
-  "mcp_servers": [
-    {
-      "name": "sap-hana-mcp",
+  "mcpServers": {
+    "azsap-mcp": {
       "command": "python",
-      "args": ["/path/to/your/server.py"]
+      "args": ["/path/to/server.py"],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
     }
-  ]
-}
-```
-
-## Using with HTTP Transport Clients
-
-Many MCP clients support HTTP/SSE transport. Configure these clients to connect to:
-
-```
-http://localhost:3000/mcp
-```
-
-### Health Check
-
-The HTTP transport provides a health check endpoint at:
-
-```
-http://localhost:3000/health
-```
-
-## Claude Desktop Integration
-
-To integrate this MCP server with Claude Desktop, follow these steps:
-
-1. Ensure the server is running with STDIO transport (this is the default configuration)
-
-2. Configure Claude Desktop with the following settings:
-
-```json
-{
-  "sap-hana": {
-    "command": "python3",
-    "args": [
-      "server.py",
-      "--transport", "stdio",
-      "--log-file", "mcp-server.log"
-    ],
-    "env": {
-      "PYTHONUNBUFFERED": "1",
-      "PYTHONPATH": "."
-    },
-    "cwd": ".",
-    "initializationTimeoutMs": 60000,
-    "shutdownTimeoutMs": 15000
   }
 }
 ```
 
-3. Set up your SAP HANA connection environment variables in `.env`:
+### HTTP/SSE Clients
+Connect to: `http://localhost:3000/mcp`
 
-```env
-HANA_HOST=your_host
-HANA_PORT=your_port
-HANA_USER=SYSTEM
-HANA_PASSWORD=your_password
-HANA_SCHEMA=your_schema
+Health check: `http://localhost:3000/health`
+
+## Testing & Development
+
+### Using MCP Inspector
+Test the server interactively with the visual MCP Inspector:
+
+```bash
+# Start server in HTTP mode
+python server.py --transport http --port 3000
+
+# Launch inspector (in another terminal)
+npx @modelcontextprotocol/inspector http://localhost:3000
+
+# Open browser to http://localhost:5173
 ```
 
-4. Restart Claude Desktop to apply the changes
+The inspector provides a web UI to test all available tools with parameter validation and result visualization.
 
-### Troubleshooting
+### Development Notes
+- All tools include comprehensive error handling and validation
+- SQL queries use parameterized statements for security
+- Azure operations support both individual VM operations and SID-based system operations
+- SSH connections are managed with proper timeout and error handling
 
-- Ensure the server is running with STDIO transport
-- Verify the Python executable path in the configuration
-- Check the server logs for connection issues
-- Ensure the working directory points to the server's root directory
+For detailed development information, see [SETUP_GUIDE.md](SETUP_GUIDE.md).
 
-## Security Considerations
+## Troubleshooting
 
-This server implements several security best practices:
+### Common Issues
+- **Connection Failures**: Verify `.env` configuration and network access to HANA/Azure
+- **Authentication Errors**: Check Azure credentials and SAP HANA user permissions  
+- **Tool Failures**: Enable debug logging with `--debug` flag for detailed error information
+- **Client Integration**: Ensure MCP client configuration matches server transport mode
 
-- Input validation for all SQL queries
-- Proper error handling without leaking sensitive information
-- Security headers for HTTP transport:
-  - Content-Security-Policy
-  - X-Content-Type-Options
-  - X-Frame-Options
-  - Strict-Transport-Security
+### Debug Information
+```bash
+# Enable detailed logging
+python server.py --debug
 
-## Future Enhancements
+# Check specific configuration
+python -c "from hana_connection import test_connection; test_connection()"
+```
 
-This implementation focuses on core tools. Future enhancements will include:
+### Getting Help
+- Check server logs for detailed error messages
+- Review [SETUP_GUIDE.md](SETUP_GUIDE.md) for configuration details
+- Use MCP Inspector for interactive testing and debugging
 
-- **Resources**: For sharing files and data with the LLM
-- **Prompts**: For providing specialized templates for different tasks
-- **Additional Tools**: For more advanced HANA operations
-- **Authentication**: For secure remote connections
-- **Progress Reporting**: For long-running operations
+## Security & Best Practices
+
+### Security Features
+- **Input Validation**: Parameterized SQL queries and command sanitization
+- **Error Handling**: Structured error responses without sensitive information leakage
+- **Authentication**: Role-based access control with user permissions
+- **HTTP Security**: Comprehensive security headers (CSP, HSTS, X-Frame-Options)
+- **Transport Security**: Support for secure HTTPS/WSS connections
+
+### Best Practices Implemented
+- **MCP Compliance**: Follows official MCP specification v1.2.1
+- **Error Consistency**: Uniform error format across all tools
+- **Resource Management**: Proper connection pooling and cleanup
+- **Logging**: Comprehensive debug logging for troubleshooting
+- **Configuration Management**: Template-based configuration with validation
+
+## Roadmap & Future Enhancements
+
+### Short Term
+- **Enhanced Resources**: File sharing and data exchange with LLM clients
+- **Custom Prompts**: Specialized templates for SAP on Azure scenarios
+- **Extended Tools**: Additional HANA administrative operations
+
+### Long Term  
+- **Multi-tenant Support**: Support for multiple SAP landscapes
+- **Progress Reporting**: Real-time status for long-running operations
+- **Advanced Analytics**: SAP system performance insights and recommendations
+- **Integration APIs**: REST APIs for external tool integration
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Please:
+1. Read the [SETUP_GUIDE.md](SETUP_GUIDE.md) for development setup
+2. Follow the existing code patterns and MCP best practices
+3. Add tests for new tools and functionality
+4. Submit Pull Requests with clear descriptions
+
+## License & Support
+
+This project is in active development. For issues and feature requests, please use the GitHub issue tracker.

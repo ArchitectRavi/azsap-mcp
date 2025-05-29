@@ -22,6 +22,7 @@ from tools.azure_tools.auth import (
     get_subscription_id, 
     get_resource_group
 )
+from tools.azure_tools.update_nsg_rule import update_nsg_rule
 
 # Configure logging
 logger = logging.getLogger(__name__)
